@@ -93,7 +93,7 @@ The `EKEY_CODE` enum has been extended with two new sets of keys:
 
 `KEY_XBUTTON1` and `KEY_XBUTTON2` were remapped to `MOUSE_EXTRA_FIRST` and `MOUSE_EXTRA_FIRST + 1`, respectively. This means that their underlying value has changed, but this should not be a problem if you were not relying on such behavior (by e.g. serializing the button index between uncompatible versions).
 
-Note that key names are properly implemented for these keys, so `CControls::getKeyName()` will return a human-readable name. In particular, for MIDI keys within the range of a piano, the traditional piano key names will be used (e.g. `"MIDI KEY C#5"`).
+Note that key names are properly implemented for these keys, so `CControls::getKeyName()` will return a human-readable name. In particular, for MIDI keys within the range of a piano, piano key names will be used (e.g. `"MIDI KEY C#5"`).
 
 ## (EXPERIMENTAL) dear imgui bindings
 
