@@ -1,10 +1,11 @@
 # Important compatibility information
 
-## 64-bit support
+## 64-bit requirement
 
-You now need a 64-bit operating system to run KAG. This is almost always the case already, but it is worth mentioning.
-
+You now need a 64-bit operating system to run KAG (both on Linux and on Windows). This is almost always the case already, but it is worth mentioning.  
 This comes with simpler tooling support for us and enhances performance.
+
+This means that on Linux you do not need to install 32-bit compatibility libraries in order to run the standalone game or a dedicated server.
 
 ## Bumped minimal Linux requirement
 
