@@ -13,7 +13,7 @@ Some behavior has been deprecated but kept functional in order to maintain compa
 
 Two `autoconfig.cfg` variables have been added:
 
-- `g_allowdeprecated` (defaulting to `true`) allows deprecated behavior to function. If disabled, relying on deprecated behavior will cause an error, so the script may fail to compile or.
+- `g_allowdeprecated` (defaulting to `true`) allows deprecated behavior to function. If disabled, relying on deprecated behavior will cause an error, so the script may fail to compile or encounter an exception, whichever is relevant.
 - `g_warndeprecated` (defaulting to `false`) will warn when relying on deprecated behavior. This is useful in order to identify and fix reliance on deprecated behavior in your mods.
 
 Here is a list of the following deprecated behaviors.
