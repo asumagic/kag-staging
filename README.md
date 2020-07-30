@@ -8,9 +8,10 @@ This is the changelog and bug tracker repository for the King Arthur's Gold stag
 
 Here is a list of changes of this build compared to vanilla KAG by category:
 - [Important compatibility information](compatibility.md)
+- [Modding changes and improvements](modding.md)
 - [Window and input improvements](window-improvements.md)
 - [Physics fixes](physics.md)
-- [Modding changes and improvements](modding.md)
+- [New lighting engine](lighting.md)
 
 ## Reporting issues
 
