@@ -10,7 +10,6 @@ Here is a list of changes of this build compared to vanilla KAG by category:
 - [Important compatibility information](compatibility.md)
 - [Modding changes and improvements](modding.md)
 - [Window and input improvements](window-improvements.md)
-- [Physics fixes](physics.md)
 - [New lighting engine](lighting.md)
 
 ## Reporting issues
