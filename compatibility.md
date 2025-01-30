@@ -7,7 +7,7 @@ This comes with simpler tooling support for us and enhances performance.
 
 This means that on Linux you do not need to install 32-bit compatibility libraries in order to run the standalone game or a dedicated server.
 
-## Bumped minimal Linux requirement
+## Linux glibc requirements
 
-KAG is now built to target Ubuntu 18.04.  
-This should not cause issues, but you may need to upgrade to a newer version if you are running on an ancient Linux distribution that ships a libc or libstdc++ version that we do not support.
+KAG is now built to target Ubuntu 20.04. We attempt to keep ABI compatibility with older glibc (down to 2.17, from 2012), but please understand that this is retrocompatibility is best-effort only and there are reasons why we can't always ship certain updated libraries such as the libstdc++.
+If you are running on an older Linux distribution that ships an outdated glibc or libstdc++ version, you may need to upgrade.
