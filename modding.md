@@ -1,5 +1,7 @@
 # Modding changes and improvements
 
+This is a non-exhaustive list of changes modders may want to be aware of.
+
 ## Removed behavior
 
 ### Lighting-related
