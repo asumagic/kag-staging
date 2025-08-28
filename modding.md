@@ -52,9 +52,7 @@ AngelScript has been updated to a recent version. This brings among other things
 
 ## AngelScript JIT
 
-This is currently available on Linux only due to corruption issues on Windows.
-
-[BlindMindStudio's JIT compiler](https://github.com/BlindMindStudios/AngelScript-JIT-Compiler) is now used which significantly improves script performance.
+A [new JIT compiler](https://github.com/asumagic/angelsea) is used to improve script performance, especially for loop- and call-heavy code.
 
 ## Better script error logging
 
