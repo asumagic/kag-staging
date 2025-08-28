@@ -46,6 +46,10 @@ Certain array types would silently allow indexing outside of array boundaries, w
 - If `g_allowdeprecated` is set to `true`, any out-of-bounds access will return the last element of the array, if present, or cause a script exception otherwise.
 - If `g_allowdeprecated` is set to `false`, any out-of-bounds access will cause a script exception as it should.
 
+## New script bindings
+
+- `weakref<>` was added and is now usable for all script types, plus `CBlob@` and `CParticle@` for the time being. This is strongly recommended when keeping long-lasting references to such objects.
+
 ## Updated AngelScript
 
 AngelScript has been updated to a recent version. This brings among other things faster script compilation and new language features, including `auto`, `final`, anonymous functions, list initializers, among other things.
