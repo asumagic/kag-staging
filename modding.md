@@ -58,6 +58,20 @@ AngelScript has been updated to a recent version. This brings among other things
 
 A [new JIT compiler](https://github.com/asumagic/angelsea) is used to improve script performance, especially for loop- and call-heavy code.
 
+Script annotations were added to alter the JIT compiler behavior. At present, the following metadata entries are available for functions:
+
+- `[jit::disable_jit]`: Disable JIT compilation for this function. Only use for troubleshooting.
+- `[jit::ignore_perf_warnings]`: Inhibit the warning that occurs when the JIT compiler encounters a function that is too complex to compile.
+
+Example:
+
+```angelscript
+[jit::ignore_perf_warnings]
+void addCommonBuilderBlocks(BuildBlock[][]@ blocks, int team_num = 0, const string&in gamemode_override = "")
+{
+...
+```
+
 ## Better script error logging
 
 Script compile errors were reworked to be more readable and to provide context.
