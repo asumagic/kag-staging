@@ -46,7 +46,7 @@ Certain array types would silently allow indexing outside of array boundaries, w
 - If `g_allowdeprecated` is set to `true`, any out-of-bounds access will return the last element of the array, if present, or cause a script exception otherwise.
 - If `g_allowdeprecated` is set to `false`, any out-of-bounds access will cause a script exception as it should.
 
-## New script bindings
+## New standard script bindings
 
 - `weakref<>` was added and is now usable for all script types, plus `CBlob@` and `CParticle@` for the time being. This is strongly recommended when keeping long-lasting references to such objects.
 
@@ -71,6 +71,87 @@ void addCommonBuilderBlocks(BuildBlock[][]@ blocks, int team_num = 0, const stri
 {
 ...
 ```
+
+## Rendering API
+
+The internal rendering logic was overhauled, mainly featuring a batching immediate-mode rendering pipeline.
+The gist of it is that now, most rendering is queued in a new internal system instead of emitting draw calls immediately.
+This allows for various improvements, including automated batching for improved performance, and "perfect" translucency sorting (whereas drawing semi-transparent things was impossible to achieve accurately before).
+
+There exists two internal render targets exposed to scripts:
+
+- `GFX::Shape2D::RenderForWorld`, which uses worldspace coordinates and allows you to select a specific Z for your shape to be rendered
+- `GFX::Shape2D::RenderForGUI`, which uses screenspace coordinates and which behaves as if every new call renders on top of the previous
+
+In order to obtain a shape, there are two classes using the builder pattern you can use:
+
+- `GFX::CustomShape2D`: Raw-ish API that lets you pass a material, a vertex array and an index array.
+- `GFX::Image2D`: Simple API appropriate for rendering sprites or icons without custom rendering.
+
+These rendering routines should be called from either an `onRender` hook, or from a `Render::` script (if appropriate).
+
+In both cases, you then trigger rendering through the `.shape` attribute. Here is an example that draws the `default.png` texture stretched to 128x128, in screenspace, with a (16, 16) origin:
+
+```angelscript
+GFX::Image2D("default.png")
+	.DestinationRect(16, 16, 128+16, 128+16)
+	.shape
+	.RenderForGUI();
+```
+
+`GFX::Image2D` is rather simple and does not allow for more complex transforms. You can customize the mesh and material using `GFX::CustomShape2D`, maybe wrapping it yourself in a class if you want to implement your own basic image transforms.
+
+Another example which renders a white triangle (with the default material) at the top-left of the map at depth 10000 (higher is closer to camera, so it is in front of most things, including the black border):
+
+```angelscript
+GFX::CustomShape2D(
+	GFX::Material(),
+	{
+		Vertex(-128, 0, 0, 0, 0),
+		Vertex(128, 0, 0, 0, 0),
+		Vertex(0, 128, 0, 0, 0)
+	},
+	{0, 1, 2}
+).shape.RenderForWorld(10000.0f, GFX::ZSetMode::OverrideVertexZ);
+```
+
+Note that `GFX::Material` supports scripted textures, and as such so does `GFX::Image2D`.
+
+If you want to render complex meshes, you should still use the appropriate `Render::` functions. The new classes are useful for drawing a moderate amount of small meshes (e.g. single quads) that are quick to copy around.
+
+Note that Z sorting happens internally, but when using opaque shapes, it counter-intuitively happens from front-to-back.  
+In other words, the engine tries to make draws that are close to the camera happen (foreground) **before** the ones that are far away from the camera (background). Z writes and tests ensure the final correct order. This is done as an optimization, to avoid unnecessary framebuffer writes.
+If you use a translucent material or whatever else that isn't opaque and requires blending, you may need to call the `.shape.StrictOrdering()` method before rendering it. This reduces the effectiveness of batching and so should only be done as needed.  
+Sprites with pixels that are either fully transparent or fully opaque do *not* qualify as "translucent". Strict ordering is not needed for those, because regular Z write and read logic only falls apart with translucency and complex blending.
+
+The ordering process is not entirely seamless: Lightmap rendering causes all worldspace render calls queued so far to be flushed. This is generally not an issue for correctness, though, as little stuff is rendered worldspace afterwards.
+
+You can now also request the GFX API to call back a function (optionally forwarding some `any@` data for your convenience) for custom worldspace or GUI rendering:
+
+```angelscript
+AddWorldRender(-100.0f, function(any@) { print("hello!"); });
+```
+
+```
+AddGUIRender(function(float z, any@) { print("i should render at depth " + z); });
+```
+
+Note that the worldspace routines don't yet support strict ordering. Thus, your function will be called back during the front-to-back rendering stage.  
+This is only a problem if you are trying to render translucent/blending meshes. In that case, the current workaround is to perform rendering in a render script and ensure that your Z tests and writes are set up appropriately.
+
+It is planned to introduce fragment and vertex shader support to `GFX::Material`. Sprite and sprite layers now expose their internal `GFX` material as an attribute, which lets you freely modify it on a per sprite layer basis, although this is not very useful yet.
+
+## Lighting
+
+The lighting logic was entirely rewritten. Light sources are now significantly cheaper to render, and lighting updates are consistently (near-)instant and significantly less glitchy.
+
+There are a few new modding possibilities, namely:
+
+- Dynamic light sources are now rendered as a texture. This is much cheaper, and you can also now manipulate it via `sprite.getLightLayer()`.
+- Particles can now be added to the light layer! This allows you to make fairly cheap lighting effects, such as soft explosion flashes.
+- You can control some aspects of shadowmap rendering (i.e. tile lighting), e.g. for adding a minimum lighting in caves.
+
+Some of these capabilities are showcased here: https://github.com/transhumandesign/kag-base/pull/2319/files
 
 ## Better script error logging
 
