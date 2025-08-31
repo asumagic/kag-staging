@@ -72,52 +72,143 @@ void addCommonBuilderBlocks(BuildBlock[][]@ blocks, int team_num = 0, const stri
 ...
 ```
 
+## Shader support
+
+`Render::CompileShader` was added, which allows you to assign a shader to a specific `SMaterial` (or `Render2D::SimpleMaterial`, as described later), which overrides its material type.
+
+Here is an example that assigns a shader to a player blob.
+
+`test.frag`:
+
+```glsl
+#version 130
+
+uniform sampler2D tex0;
+uniform float time;
+
+void main() 
+{
+    vec4 color = texture2D(tex0,  gl_TexCoord[0].xy);
+    if (color.a < 0.01) { discard; }
+    gl_FragColor.rgba = color * 1.2;
+    gl_FragColor.r *= (sin(time * 0.5) + 1.0) * 0.5 + sin(gl_FragCoord.x / 4.0 + time);
+    gl_FragColor.g *= (sin(time * 0.5) + 1.0) * 1.0 + sin(gl_FragCoord.y / 4.0 + time);
+}
+```
+
+`test.vert`:
+
+```glsl
+#version 130
+
+uniform float time;
+
+void main()
+{
+    vec4 pos = vec4(
+        gl_Vertex.x + sin(time * 0.3) * 6,
+        gl_Vertex.y + sin(time * 0.5) * 2,
+        gl_Vertex.zw
+    );
+    gl_Position = gl_ModelViewProjectionMatrix * pos;
+    gl_TexCoord[0] = gl_MultiTexCoord0;
+}
+```
+
+Then paste in the console:
+
+```angelscript
+Render::Shader@ shader = Render::CompileShader(
+    "test.vert", "test.frag",
+    SMaterial::MType::TRANSPARENT_ALPHA_CHANNEL,
+    function(Render::Uniforms &in vert, Render::Uniforms &in frag, any@) {
+        float t = getGameTime() + getInterpolationFactor();
+        vert.SetFloat("time", t);
+        frag.SetFloat("time", t);
+    });
+CSprite@ sprite = @getLocalPlayerBlob().getSprite();
+sprite.material.SetShader(@shader);
+```
+
+Your character should now be extra disco.
+
 ## Rendering API
 
-The internal rendering logic was overhauled, mainly featuring a batching immediate-mode rendering pipeline.
+The internal rendering logic was overhauled, mainly featuring a batching immediate-mode rendering pipeline, `Render2D`.
 The gist of it is that now, most rendering is queued in a new internal system instead of emitting draw calls immediately.
 This allows for various improvements, including automated batching for improved performance, and "perfect" translucency sorting (whereas drawing semi-transparent things was impossible to achieve accurately before).
 
 There exists two internal render targets exposed to scripts:
 
-- `GFX::Shape2D::RenderForWorld`, which uses worldspace coordinates and allows you to select a specific Z for your shape to be rendered
-- `GFX::Shape2D::RenderForGUI`, which uses screenspace coordinates and which behaves as if every new call renders on top of the previous
+- `Render2D::Shape2D::RenderForWorld`, which uses worldspace coordinates and allows you to select a specific Z for your shape to be rendered
+- `Render2D::Shape2D::RenderForGUI`, which uses screenspace coordinates and which behaves as if every new call renders on top of the previous
 
 In order to obtain a shape, there are two classes using the builder pattern you can use:
 
-- `GFX::CustomShape2D`: Raw-ish API that lets you pass a material, a vertex array and an index array.
-- `GFX::Image2D`: Simple API appropriate for rendering sprites or icons without custom rendering.
+- `Render2D::CustomShape2D`: Raw-ish API that lets you pass a material, a vertex array and an index array.
+- `Render2D::Image2D`: Simple API appropriate for rendering sprites or icons without custom rendering.
 
 These rendering routines should be called from either an `onRender` hook, or from a `Render::` script (if appropriate).
 
 In both cases, you then trigger rendering through the `.shape` attribute. Here is an example that draws the `default.png` texture stretched to 128x128, in screenspace, with a (16, 16) origin:
 
 ```angelscript
-GFX::Image2D("default.png")
+Render2D::Image2D("default.png")
 	.DestinationRect(16, 16, 128+16, 128+16)
 	.shape
 	.RenderForGUI();
 ```
 
-`GFX::Image2D` is rather simple and does not allow for more complex transforms. You can customize the mesh and material using `GFX::CustomShape2D`, maybe wrapping it yourself in a class if you want to implement your own basic image transforms.
+`Render2D::Image2D` is rather simple and does not allow for more complex transforms. You can customize the mesh and material using `Render2D::CustomShape2D`, maybe wrapping it yourself in a class if you want to implement your own basic image transforms.
 
 Another example which renders a white triangle (with the default material) at the top-left of the map at depth 10000 (higher is closer to camera, so it is in front of most things, including the black border):
 
 ```angelscript
-GFX::CustomShape2D(
-	GFX::Material(),
+Render2D::CustomShape2D(
+	Render2D::SimpleMaterial(),
 	{
 		Vertex(-128, 0, 0, 0, 0),
 		Vertex(128, 0, 0, 0, 0),
 		Vertex(0, 128, 0, 0, 0)
 	},
 	{0, 1, 2}
-).shape.RenderForWorld(10000.0f, GFX::ZSetMode::OverrideVertexZ);
+).shape.RenderForWorld(10000.0f, Render2D::ZSetMode::OverrideVertexZ);
 ```
 
-Note that `GFX::Material` supports scripted textures, and as such so does `GFX::Image2D`.
+Note that `Render2D::SimpleMaterial` supports scripted textures, and as such so does `Render2D::Image2D`.
 
-If you want to render complex meshes, you should still use the appropriate `Render::` functions. The new classes are useful for drawing a moderate amount of small meshes (e.g. single quads) that are quick to copy around.
+You may be wondering why this uses a new material class instead of . The gist of it is that SimpleMaterial was intentiontally kept as simple as possible to make it cheap and simple to manage internally, in a way that enables fast batching.
+
+It is possible to assign a shader to a `Render2D::SimpleMaterial`, but with the following limitations:
+
+- You will only be able to use one sampler (texture), e.g. the texture of the sprite itself if changing the material of a sprite layer.
+- `gl_VertexID` cannot be relied upon in the vertex shader, because batching aggregates primitives in the vertex buffer in an unpredictable order.
+- If you want different instances of the same sprite with the same shader to have different uniforms associated, you can do so by setting the `uint16 uniqueKey`. The uniform callback will be called once for every `uniqueKey` in use. You can then inspect it by getting the material being rendered with `Render2D::GetActiveMaterial()` (**only** inside the uniforms callback). Bear in mind this will split batches, so only do it if you really can't share all uniforms. This is not needed when using `Render::SMaterial`, because then draws are not batched whatsoever.
+
+Here is how the last point would look like with the disco shader example:
+
+```angelscript
+Render::Shader@ shader = Render::CompileShader(
+    "test.vert", "test.frag",
+    SMaterial::MType::TRANSPARENT_ALPHA_CHANNEL,
+    function(Render::Uniforms &in vert, Render::Uniforms &in frag, any@) {
+        float t = getGameTime() + getInterpolationFactor();
+        vert.SetFloat("time", t);
+        frag.SetFloat("time", t);
+
+        /* demo of unique keys */
+        Render2D::SimpleMaterial mat;
+        Render2D::GetActiveMaterial(mat);
+        print('' + mat.uniqueKey);
+    });
+CSprite@ sprite = @getLocalPlayerBlob().getSprite();
+sprite.material.uniqueKey = 123;
+sprite.material.SetShader(@shader);
+```
+
+Notice how on every frame, this prints the unique key associated with the material.
+
+If you want to render complex meshes, you should still use the appropriate `Render::` functions. The new classes are useful for drawing a moderate amount of small 2D meshes (e.g. single quads) that are quick to copy around.
 
 Note that Z sorting happens internally, but when using opaque shapes, it counter-intuitively happens from front-to-back.  
 In other words, the engine tries to make draws that are close to the camera happen (foreground) **before** the ones that are far away from the camera (background). Z writes and tests ensure the final correct order. This is done as an optimization, to avoid unnecessary framebuffer writes.
@@ -126,20 +217,18 @@ Sprites with pixels that are either fully transparent or fully opaque do *not* q
 
 The ordering process is not entirely seamless: Lightmap rendering causes all worldspace render calls queued so far to be flushed. This is generally not an issue for correctness, though, as little stuff is rendered worldspace afterwards.
 
-You can now also request the GFX API to call back a function (optionally forwarding some `any@` data for your convenience) for custom worldspace or GUI rendering:
+You can now also request the Render2D API to call back a function (optionally forwarding some `any@` data for your convenience) for custom worldspace or GUI rendering, from which you would usually call `Render::` functions.
 
 ```angelscript
 AddWorldRender(-100.0f, function(any@) { print("hello!"); });
 ```
 
-```
+```angelscript
 AddGUIRender(function(float z, any@) { print("i should render at depth " + z); });
 ```
 
 Note that the worldspace routines don't yet support strict ordering. Thus, your function will be called back during the front-to-back rendering stage.  
 This is only a problem if you are trying to render translucent/blending meshes. In that case, the current workaround is to perform rendering in a render script and ensure that your Z tests and writes are set up appropriately.
-
-It is planned to introduce fragment and vertex shader support to `GFX::Material`. Sprite and sprite layers now expose their internal `GFX` material as an attribute, which lets you freely modify it on a per sprite layer basis, although this is not very useful yet.
 
 ## Lighting
 
