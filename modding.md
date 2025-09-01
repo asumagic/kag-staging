@@ -132,6 +132,95 @@ sprite.material.SetShader(@shader);
 
 Your character should now be extra disco.
 
+Assigning a shader to a `SMaterial` is equally easy. For example, this modifies the terrain shaders from KAGCraft2 to make terrain move wavily and make colors pass over it:
+
+```angelscript
+Render::Shader@ shader = Render::CompileShader(
+	"terrain.vert",
+	"terrain.frag",
+	SMaterial::TRANSPARENT_ALPHA_CHANNEL_REF,
+	function(Render::Uniforms &in vert, Render::Uniforms &in frag, any@) {
+		vert.SetFloat("time", getGameTime() + getInterpolationFactor());
+		frag.SetFloat("time", getGameTime() + getInterpolationFactor());
+	}
+);
+map_material.SetShader(@shader);
+```
+
+Where `terrain.frag` is:
+
+```glsl
+#version 130
+
+uniform sampler2D tex0;
+uniform float time;
+
+in vec3 basePos;
+
+// hsv routines yoinked from https://stackoverflow.com/a/17897228/6261331
+// under wtfpl license
+
+vec3 rgb2hsv(vec3 c)
+{
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+void main() 
+{
+    vec4 texColor = texture2D(tex0, gl_TexCoord[0].xy);
+    if (texColor.a < 0.01) { discard; }
+
+    vec3 hsv = rgb2hsv(texColor.rgb);
+    /* h */ hsv.r *= 1.0 + sin(basePos.y * 0.5 + basePos.z * 0.2) + sin(basePos.x * 0.1 + time * 0.1) * 0.4;
+    /* s */ hsv.g += sin(basePos.y * 0.15 + time * 0.2) * 0.3;
+    /* v */ hsv.b += sin(basePos.z * 0.1 + time * 0.2) * 0.05;
+
+    vec4 color = vec4(hsv2rgb(hsv), texColor.a);
+
+    gl_FragColor = color;
+}
+```
+
+And `terrain.vert` is:
+
+```glsl
+#version 130
+
+uniform float time;
+
+out vec3 basePos;
+
+void main()
+{
+    basePos = gl_Vertex.xyz;
+
+    vec4 pos = vec4(
+        gl_Vertex.x + sin(gl_Vertex.y + time * 0.4) * 0.5 + sin(gl_Vertex.z * 0.1 + time * 0.02) * 3,
+        gl_Vertex.y + sin(gl_Vertex.z * 0.1 + time * 0.1) * 4.0,
+        gl_Vertex.z + sin(gl_Vertex.x + time * 0.3) * 0.5 + sin(gl_Vertex.x * 0.1 + time * 0.02) * 3,
+        gl_Vertex.w
+    );
+
+    gl_Position = gl_ModelViewProjectionMatrix * pos;
+    gl_TexCoord[0] = gl_MultiTexCoord0;
+}
+```
+
+`SMaterial` supports up to 4 samplers (textures). All these 4 textures are available as `tex0`, `tex1`, `tex2` and `tex3`.
+
 ## Rendering API
 
 The internal rendering logic was overhauled, mainly featuring a batching immediate-mode rendering pipeline, `Render2D`.
@@ -177,7 +266,7 @@ Render2D::CustomShape2D(
 
 Note that `Render2D::SimpleMaterial` supports scripted textures, and as such so does `Render2D::Image2D`.
 
-You may be wondering why this uses a new material class instead of . The gist of it is that SimpleMaterial was intentiontally kept as simple as possible to make it cheap and simple to manage internally, in a way that enables fast batching.
+You may be wondering why this uses a new material class instead of using `SMaterial`. The gist of it is that `SimpleMaterial` was intentiontally kept as simple as possible to make it cheap and simple to manage internally, in a way that enables fast batching.
 
 It is possible to assign a shader to a `Render2D::SimpleMaterial`, but with the following limitations:
 
