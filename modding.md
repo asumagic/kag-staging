@@ -219,6 +219,10 @@ void main()
 }
 ```
 
+This results in:
+
+![KAGCraft2 shader demo](assets/kagcraft2-shaders.png)
+
 `SMaterial` supports up to 4 samplers (textures). All these 4 textures are available as `tex0`, `tex1`, `tex2` and `tex3`.
 
 ## Rendering API
