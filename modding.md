@@ -540,18 +540,19 @@ There are several uses of plots in the debug menu, so here are general tips on h
 
 ### Profiler
 
-The existing profiler was greatly improved and made into a visual profiler, which integrates a frametime plot (using [implot](https://github.com/epezent/implot)). This provides a far better insight for performance analysis.
+The existing profiler was removed in favor of Tracy integration. This allows local or remote profiling of a client or server build.
 
-![profiler](assets/debug-menu-profiler.png)
+Tracy integration is relatively minimal, but it highlights important subsystems of the engine and will track the execution time of individual scripts.  
+KAG disables some Tracy options. Namely, it currently doesn't provide graphics profiling, sampling profiling and does not broadcast its presence over TCP (i.e. you must enter the IP manually).
 
-"Enable profiling" enables profiling regardless of whether the F5 menu is open, and "Enable reliable profiling" will enable profiling only when the F5 menu is closed, so that the debug menu rendering and profiling does not interfere (as much) with the performance statistics.
+First, download and install the Tracy GUI. You should match the Tracy version that we use in engine, currently **`0.12.2`**.  
+You can download the official pre-built binaries for Windows here: https://github.com/wolfpld/tracy/releases/download/v0.12.2/windows-0.12.2.zip  
+On Linux, clone the according tag and compile it according to documentation.
 
-Note that at the moment, large plot spans will worsen performance with the profiler open significantly, which should get improved in the future.
+The GUI is `tracy-profiler` (`.exe`). Run it and start a connection to the default localhost settings.
 
-You can hover tasks in the tree view on the right pane to get more information about a specific task. Clicking it will plot the time it took for every frame, which can be helpful to identify tasks that may cause stuttering or the impact of a task which takes a variable time to complete.  
-Click "Clear tracked" in order to remove these plots.
-
-Disable profiling when you want to examine the data in order to be able to zoom horizontally.
+Tracy is entirely disabled in KAG by default. You must pass the `profile` commandline argument to KAG on startup, e.g. `./KAG noautoupdate profile`.  
+**Bear in mind this exposes a network socket.** You might not want to expose this to the internet. The `TRACY_ONLY_LOCALHOST=1` option can be used to restrict listening to a local port. If you want to profile a remote client or server, you could set up a VPN like tailscale and block the `8086` TCP port from the general internet with a firewall.
 
 ### Audio
 
