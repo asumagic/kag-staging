@@ -547,7 +547,7 @@ KAG disables some Tracy options. Namely, it currently doesn't provide graphics p
 
 First, download and install the Tracy GUI. You should match the Tracy version that we use in engine, currently **`0.12.2`**.  
 You can download the official pre-built binaries for Windows here: https://github.com/wolfpld/tracy/releases/download/v0.12.2/windows-0.12.2.zip  
-On Linux, clone the according tag and compile it according to documentation.
+On Linux, clone the according tag and compile it according to documentation. The Windows pre-builts seem to work fine under Wine though, and you can still profile the Linux builds that way.
 
 The GUI is `tracy-profiler` (`.exe`). Run it and start a connection to the default localhost settings.
 
