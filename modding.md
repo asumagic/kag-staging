@@ -552,7 +552,7 @@ On Linux, clone the according tag and compile it according to documentation. The
 The GUI is `tracy-profiler` (`.exe`). Run it and start a connection to the default localhost settings.
 
 Tracy is entirely disabled in KAG by default. You must pass the `profile` commandline argument to KAG on startup, e.g. `./KAG noautoupdate profile`.  
-**Bear in mind this exposes a network socket.** You might not want to expose this to the internet. The `TRACY_ONLY_LOCALHOST=1` option can be used to restrict listening to a local port. If you want to profile a remote client or server, you could set up a VPN like tailscale and block the `8086` TCP port from the general internet with a firewall.
+**Bear in mind this exposes a network socket.** You might not want to expose this to the internet. The `TRACY_ONLY_LOCALHOST=1` environment variable can be used to restrict listening to a local port. If you want to profile a remote client or server, you could set up a VPN like tailscale and block the `8086` TCP port from the general internet with a firewall.
 
 ### Audio
 
