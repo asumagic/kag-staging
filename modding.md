@@ -323,6 +323,53 @@ AddGUIRender(function(float z, any@) { print("i should render at depth " + z); }
 Note that the worldspace routines don't yet support strict ordering. Thus, your function will be called back during the front-to-back rendering stage.  
 This is only a problem if you are trying to render translucent/blending meshes. In that case, the current workaround is to perform rendering in a render script and ensure that your Z tests and writes are set up appropriately.
 
+## Font rendering
+
+Most font rendering can now be replaced by using `GUI::BannerBuilder`. It provides a unique interface for rendering text either via `CBanner` (implicitly) or via regular text rendering.
+
+Example from `BuilderInventory.as` which (implicitly) relies on banners to draw a background and showing icons:
+
+```angelscript
+GUI::DrawText( getTranslatedString("Requires\n") + missingText, Vec2f(boxpos.x - 50, boxpos.y - 15.0f), Vec2f(boxpos.x + 50, boxpos.y + 15.0f), color_black, false, false, true );
+```
+
+This example can be replaced with:
+
+```angelscript
+GUI::BannerBuilder()
+	.with_current_font()
+	.with_text(getTranslatedString("Requires\n") + missingText)
+	.with_rect(Vec2f(boxpos.x - 50, boxpos.y - 15.0f), Vec2f(boxpos.x + 50, boxpos.y + 15.0f))
+	.with_color(color_black)
+	.with_banner_background(true)
+	.render_as_banner();
+```
+
+Another example from `HoverMessage.as`:
+
+```angelscript
+GUI::DrawText(
+	t.text,
+	base_offset + t.offset + Vec2f(kickout_effect, 0.0f),
+	t.color
+);
+```
+
+Which can be replaced with:
+
+```angelscript
+GUI::BannerBuilder()
+	.with_current_font()
+	.with_text(t.text)
+	.with_color(t.color)
+	.with_origin_as_rect(base_offset + t.offset + Vec2f(kickout_effect, 0.0f))
+	.render_simple();
+```
+
+Note that `GUI::DrawText` has an implicit offset of `Vec2f(2.0f, 2.0f)` added to the position. `BannerBuilder` does not, but if you want to have this offset, you can pass `true` to `.render_simple`, i.e. `.render_simple(true)`.
+
+The API is fairly self-descriptive, so check the interface for more details.
+
 ## Lighting
 
 The lighting logic was entirely rewritten. Light sources are now significantly cheaper to render, and lighting updates are consistently (near-)instant and significantly less glitchy.
