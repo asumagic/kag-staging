@@ -323,6 +323,12 @@ AddGUIRender(function(float z, any@) { print("i should render at depth " + z); }
 Note that the worldspace routines don't yet support strict ordering. Thus, your function will be called back during the front-to-back rendering stage.  
 This is only a problem if you are trying to render translucent/blending meshes. In that case, the current workaround is to perform rendering in a render script and ensure that your Z tests and writes are set up appropriately.
 
+### Render styles
+
+New internal render styles were exposed but they're generally not that useful.
+
+`NormalNonStrictAlphaBlending` is now the default for various internal rendering (e.g. sprites). It supports alpha blending, but it will not guarantee proper ordering, which is more performant and generally looks correct enough.
+
 ## Font rendering
 
 Most font rendering can now be replaced by using `GUI::BannerBuilder`. It provides a unique interface for rendering text either via `CBanner` (implicitly) or via regular text rendering.
