@@ -569,6 +569,28 @@ void onRender(CRules@ this)
 }
 ```
 
+### Sound attenuation curve
+
+The volume attenuation curve is defined as an array of `Vec2f`, with each point representing `(distance, volume)` where `volume` should generally be in a `0..1` range.  
+As of writing, the vanilla curve is defined as:
+
+```angelscript
+{
+	Vec2f(0.0f, 0.80f),
+	Vec2f(32.0f, 0.40f),
+	Vec2f(100.0f, 0.20f),
+	Vec2f(200.0f, 0.10f),
+	Vec2f(500.0f, 0.05f),
+	Vec2f(1500.0f, 0.00f)
+};
+```
+
+It can be configured and fetched using `Sound::SetAttenuationCurve` and `Sound::getAttenuationCurve` respectively.
+
+Note that the sound is processed as if in 3D space. The listener is set at a certain distance from the world. As such, these distances do not really represent a distance in pixels from the camera center to the source of a sound.
+
+This mechanism does **NOT** allow you to define a sound attenuation curve per-source. It is effectively global.
+
 ## Debug menu and new console
 
 A new debug menu was added and can be brought up using F5, or the home key to open the console and focus on the text prompt.
