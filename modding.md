@@ -467,9 +467,29 @@ void onRender(CRules@ this)
 
 ## (EXPERIMENTAL) New audio bindings
 
-`Sound::play` and related functions now return a `Sound::Voice@` handle. This new class provides various methods to manage a sound by e.g. adding sound effects, changing the pitch dynamically.
+`Sound::Play` and related functions now return a `Sound::Voice@` handle. This new class provides various methods to manage a sound by e.g. adding sound effects, changing the pitch dynamically.
 
-Several audio filters were added:
+There is also now a `bool paused` parameter, which allows you to create a sound that is only played once you call `.setPause(false)`. This is intended to let you perform changes to the `Voice` before it gets played, e.g. using `.setDelay`, which, while not accurate, can be used to delay sounds and can be used to avoid overlapping sounds. For instance, try the following in console:
+
+```angelscript
+CFileMatcher m("dig_dirt?.ogg");
+while (m.iterating()) {
+	const string sound = m.getCurrent();
+	Sound::Source@ src = Sound::getSource(sound);
+	src.softCutOff = 10;
+	src.hardCutOff = 20;
+	src.softCutOffReduction = 0.02;
+}
+
+Random r;
+for (int i = 0; i < 20; ++i) {
+	Sound::Voice@ v = @Sound::Play(m.getRandom(), getLocalPlayerBlob().getPosition(), 1, 1, true);
+	v.setDelay(r.NextFloat() * 0.25);
+	v.setPause(false);
+}
+```
+
+In addition, several audio filters were added:
 
 ```
 Sound::Filter@ Sound::CreateBassboostFilter()
@@ -579,6 +599,8 @@ The engine uses two thresholds:
 
 - `.softCutOff`, a threshold beyond which the quietest sounds (accounting for sound distance etc.) get their volume reduced by `.softCutOffReduction`. This stacks, so the same sound can get its volume reduced more than once.
 - `.hardCutOff`, a threshold beyond which the quietest sounds are cancelled.
+
+Optionally, when there is more than `.softCutOff` instances of a sound playing, `.softCutOffRandomDelay` can be used to (roughly) randomly delay the sound playing by up to a given time (in seconds). This is analogous to the `.setDelay` logic described earlier, although with less control. The primary usecase is sources played by the engine or from which you otherwise cannot get a paused voice immediately.
 
 For instance, for a `hello.ogg` source with a `.softCutOff` of 6, a `.softCutOffReduction` of 0.1f, and a `.hardCutOff` of 10, nothing special will happen until 6 simultaneous `hello.ogg` playing.  
 If you play a sound source while >= 10 are playing, the engine will cut the quietest playing one.  
