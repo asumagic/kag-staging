@@ -569,6 +569,27 @@ void onRender(CRules@ this)
 }
 ```
 
+### Generic sound source controls
+
+You can obtain a `Sound::Source@` via `Sound::getSource("file name or source name")`.
+
+The new audio engine will restrict the number of simultaneously played sounds from the same source (i.e. same audio file) to avoid overlapping sounds being too noisy.
+
+The engine uses two thresholds:
+
+- `.softCutOff`, a threshold beyond which the quietest sounds (accounting for sound distance etc.) get their volume reduced by `.softCutOffReduction`. This stacks, so the same sound can get its volume reduced more than once.
+- `.hardCutOff`, a threshold beyond which the quietest sounds are cancelled.
+
+For instance, for a `hello.ogg` source with a `.softCutOff` of 6, a `.softCutOffReduction` of 0.1f, and a `.hardCutOff` of 10, nothing special will happen until 6 simultaneous `hello.ogg` playing.  
+If you play a sound source while >= 10 are playing, the engine will cut the quietest playing one.  
+If you play a sound source while >= 6 are playing, then all of the `n-6` quietest sound sources get their volume reduced by `0.1f`.
+
+For example, if you have a well-controlled turret that should not get its volume toned down, you could set a high `softCutOff`/`hardCutOff`.
+
+Bear in mind the engine has a hard limit for `256` simultaneous sounds (all sources combined), which you should preferably not approach and will likely not be lifted due to performance constraints.
+
+This information can be debugged from the `F5->Windows->Audio->Sound sources` menu.
+
 ### Sound attenuation curve
 
 The volume attenuation curve is defined as an array of `Vec2f`, with each point representing `(distance, volume)` where `volume` should generally be in a `0..1` range.  
